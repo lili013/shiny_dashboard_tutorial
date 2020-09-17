@@ -11,3 +11,7 @@ You can follow along with a document I prepared in French here : [Rapport_final.
 
 Packages needed: ggplot2, shiny, shinydashboard, magrittr, leaflet, crossatalk, dplyr, flexdashboard et plotly.
 
+<p align="center">
+  <img src="img/juan-davila-P8PlK2nGwqA-unsplash(1).jpg" width="650">
+</p>
+
