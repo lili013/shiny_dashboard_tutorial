@@ -1,0 +1,64 @@
+
+---
+title: RMarkdown Primer
+author : Emilie Hamel
+output : 
+    html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE, fig.align = 'center', eval = TRUE)
+```
+
+# Example RMarkdown document 
+This is an interactive document written in *markdown*. As you can see it is easy to include: 
+
+  1. Ordered lists 
+  2. *Italics* 
+  3. **Bold type** 
+  4. Links to [Documentation](https://rmarkdown.rstudio.com/) 
+    
+## This is heading two 
+Perhaps this introduces the visualisation below. 
+
+So if we type the letter r then hit Shift + Tab on the keyboard, it creates a chunk but also has placeholders for the label and any options.
+
+## R code chunk
+
+```{r ajouter-un-label-ici}
+8+192
+```
+
+
+# Data Display
+
+```{r load-data}
+library(ggplot2)
+data(diamonds)
+```
+
+```{r table1}
+head(diamonds)
+```
+
+```{r table2}
+knitr::kable(head(diamonds))
+```
+
+```{r table3}
+DT::datatable(head(diamonds))
+```
+
+
+# Graphique Final
+```{r histogram, message=FALSE, cache=FALSE}
+possible <- names(diamonds)[sapply(diamonds, is.numeric)] #vecteur avec les noms de variables
+
+selectInput(
+  inputId = "selCol",
+  label = "Select a column",
+  choices = possible
+)
+renderPlot(ggplot(diamonds, aes_string(x=input$selCol)) +geom_histogram())
+```

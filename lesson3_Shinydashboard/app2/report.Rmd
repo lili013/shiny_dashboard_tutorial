@@ -1,0 +1,13 @@
+---
+title: "Pizza Spots"
+output: html_document
+params:
+  places: 'none'
+---
+
+This report prints a list of pizza places.
+
+```{r pizza-places, echo= FALSE}
+params$places
+```
+

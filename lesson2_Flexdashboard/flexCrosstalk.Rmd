@@ -1,0 +1,62 @@
+---
+title: "flexCrosstalk"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    self-contained: true 
+    logo: hec2.png
+runtime: shiny
+---
+
+```{r load-pkg}
+library(magrittr)
+library(leaflet)
+library(crosstalk)
+
+```
+
+```{r location}
+root <- rprojroot::find_rstudio_root_file()
+```
+```{r read-map-data}
+pizza <- jsonlite::fromJSON(file.path(root, "/lesson2_Flexdashboard/favoritespots.json")) %>% 
+  tidyr::unnest()
+
+pizzaShare <- SharedData$new(pizza)
+```
+
+<!-- to enable the communication between HTML widgets, we need to create a shared data frame. It's a new concept, introduced by Crosstalk, that allows the widgets to communicate to each other once they are in Javascript form in the browser -->
+
+
+# Map
+
+##
+
+
+### Data
+
+```{r pizza-table}
+DT::datatable(
+  pizzaShare,
+  rownames = FALSE,
+  options = list(scrollX=TRUE)
+)
+```
+
+##
+
+### Map
+```{r pizza-map}
+leaflet(pizzaShare) %>% 
+  addTiles() %>% 
+  addMarkers(
+    lng=  ~longitude, 
+    lat = ~latitude,
+    popup = ~Name
+    
+  )
+```
+
+
+

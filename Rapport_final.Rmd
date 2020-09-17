@@ -1,0 +1,923 @@
+---
+title: "Tutoriel sur la Construction de Tableau de Bord avec R"
+author:
+  - Émilie Hamel
+
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+header-includes: 
+   - \usepackage{fancyhdr}
+   - \pagestyle{fancy}
+   - \setlength\headheight{15.4pt}
+   - \usepackage{setspace}\onehalfspacing
+output: 
+  github_document:
+    toc: true
+    toc_depth: 1
+fontsize: 12pt
+geometry: margin=1in
+lang: fr-CA
+number_sections: yes
+mainfont: Times New Roman
+subtitle: "Utiliser Shiny pour faire parler vos données"
+bibliography: bibliography.bib
+link-citations: yes
+
+---
+```{r setup-rapport, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+library(ggplot2)
+library(leaflet)
+library(shinydashboard)
+library(magrittr)
+library(shinyjs)
+
+options(knitr.duplicate.label = "allow")
+```
+\pagebreak
+
+# Introduction
+Depuis le développement de RStudio en 2011, Shiny est devenu une solution très populaire pour construire des tableaux de bords et des applications web. Les applications Shiny ont toutes les fonctionnalités R et donc son pouvoir computationnel. Ce qui rend Shiny très intéressant est sa réactivité. Shiny intègre les fonctionnalités de `HTLM`, `CSS` et `Javascripts` pour rendre ses applications dynamiques et interactives. Par exemple, un utilisateur peut importer des données et adapter intégralement leur visualisation directement dans l’application. En d’autres mots, ceci permet à l’utilisateur d’interagir avec les données. Dans la galerie Shiny, on peut voir toutes sortes d’application [^1].
+
+## Types d’application Shiny
+
+ll existe plusieurs types d’application Shiny ainsi que plusieurs façons de les construire. Il est possible de construire un tableau de bord avec seulement Shiny, Shiny et Shinydashboard ou avec Shiny et Flexdashboard.  La courbe d’apprentissage pour bâtir des applications seulement basé sur Shiny est assez imposante. Shiny demande beaucoup de temps pour être maîtrisé puisqu’il est très puissant, offre beaucoup de contrôl et intègre des commandes `HTML`, `JavaScript` et `CSS`. Il est plus réaliste de s’attaquer à la construction de tableaux de bords avec shinydashboard ou flexdashboard. 
+
+Shinydashboard permet d’utiliser certaines fonctionnalité de Shiny mais seulement dans une mise en page de tableau de bord. La syntaxe ressemble à celle de Shiny. Il est facile d’obtenir présentation professionnelle et moderne avec Shinydashboard. Donc, Shinydashboard est plus simple mais moins flexible que Shiny. Flexdashboard permet de construire un tableau de board à partir un document RMarkdown. Le fait de ne pas avoir à utiliser la syntaxe de Shiny peut simplifier le travail. Flexdashboard qui lui aussi permet de produire facilement une apparence professionnelle. Il utilise aussi certaines fonctionnalités de Shiny comme de `HTML widgets`.
+
+## Comment ça marche?
+Expliqué simplement, une application web Shiny accède à un input par un site web, communique ces informations à R pour lui permettre de faire des manipulations et renvoie les résultats en output sur la page web. Ce qui est intéressant est que ces applications sont interactives! Donc, si l’input change alors l’output changera aussi.
+
+## Valeurs Réactives 
+Pour lier l’output à l’input, il faut utiliser un style de programmation particulier : la programmation réactive. Ce genre de programmation utilise des valeurs réactives et des expression réactives. Il faut faire attention de ne pas confondre une valeur réactive à un valeur relative. Prenons ce petit exemple simple:
+```{r ex-reactive, eval=FALSE}
+# assigner une valeur à A et B
+A=5; B=9
+# valeurs absolues de la somme
+5+9
+# valeur relative de la somme
+C=A+B
+C
+# C n'a pas une valeur réactive parce que
+# si on change la valeur de A ou B, il
+# sera nécessaire de mettre à jour C par nous même
+```
+Une valeur réactive se met à jour automatiquement. Si l’une des dépendances d’une valeur réactive changée alors la valeur réactive sera modifiée aussi. Les expressions réactives sont construites autour de ces valeurs réactives.
+
+[^1]: <https://shiny.rstudio.com/gallery/>
+
+## Structure du tutoriel
+
+Étant donné le niveau de difficulté de Shiny, le tutoriel s’attaque plus tôt à Flexdashboard et Shinydashboard. Le document à été conçu afin de permettre à l’utilisateur de se pratiquer simultanément et de recréer les tableaux de bords. Les fichiers nécessaire pour recréer les différentes applications seront mis à votre disposition. Dans un premier temps, nous allons rapidement explorer RMarkdown afin de pouvoir créer un Flexdashboard. Dans un deuxième temps, nous allons explorer comment construire des tableaux de bord Shinydashboard soit en 2 scripts R ou en 1 seul. Avant de commencer, assurez vous d'avoir créé un projet R et d'y avoir copié tous les documents connexes au tutoriel dans ce répertoire. De plus, il faut s'assurer d'avoir téléchargé les librairies suivantes: `ggplot2`, `shiny`, `shinydashboard`, `magrittr`, `leaflet`, `crossatalk`, `dplyr`, `flexdashboard` et `plotly`.
+
+# RMarkdown 
+Avant de commencer à construire un tableau de bord, nous allons explorer quelques aspects de bases de l’écriture d’un fichier RMarkdown. RMarkdown est basé sur Markdown qui lui est un langage de balisage (markup language). Markdown[^2], comme LaTex, sont des langages qui se convertissent facilement en `HTML` et qui ont une allure se rapprochant d’un fichier Word .doc. Un fichier RMarkdown permet d’utiliser les conventions de Markdown et d’y insérer des bouts de code R (code chunk). Par exemple, un code chunk peut être inséré dans le document pour obtenir un diagramme en bâtons. En combinant RMarkdown et Shiny, il est possible de créer des documents avec lesquels les utilisateurs peuvent interagir.
+Allons-y avec un premier exemple. À l’aide de RStudio, cliquer sur File | New File | R Markdown | New document | OK. Le nouveau document contient par défauts un modèle (template). Effacez tout pour commencer à zéro.
+[^2]:(https://daringfireball.net/projects/markdown/)
+
+
+## YAML & Markdown
+Au début de notre nouveau document RMarkdown, nous allons insérer du metadata YAML (Yet Another Markup Language). Cette portion du document commence et se termine par un bloc de 3 tirets (---). Entre ces blocs, nous allons inscrire de l’information sur la nature du document comme un titre, la date, l’auteur, et le format de l’output désiré. Remarquer que l’on doit mettre deux points ( : ) après chaque arguments. 
+ 
+Copier et coller le code ci-dessous et appuyer sur l’icône Knit (control + shift + K) pour produire un aperçu du document dans une autre fenêtre. Attention, l’indentation entre le bloc output et htlm_document est primordiale!
+```
+---
+title: RMarkdown Primer
+author : Emilie Hamel
+output :
+
+    html_document
+---
+```
+Il existe toutes sortes d’options YAML [^3] [^4]. Pour l’instant, cette portion de code YAML suffira.
+
+[^3]:(https://bookdown.org/yihui/rmarkdown/html-document.html)
+[^4]:(https://bookdown.org/yihui/rmarkdown/pdf-document.html)
+
+Avant d’aller plus loin, regardons ensemble quelques concepts de bases pour écrire un document RMarkdown. Copier et coller le code ci-dessous dans votre document après la portion de code YAML et faire rouler le code (control + shift + K).
+```{r ex-rmarkdown2, eval=FALSE}
+# Example RMarkdown document
+This is an interactive document written in *markdown*.
+As you can see it is easy to include:
+
+        1. Ordered lists
+        2. *Italics*
+        3. **Bold type**
+        4. Links to [Documentation](http://example.com/)
+
+## This is heading two
+Perhaps this introduces the visualisation below.
+```
+
+### Quelques petites choses à remarquer:
+* Le caractère # stylise la ligne comme étant un titre de 1er niveau et ## comme étant un titre de 2e niveau
+* On peut créer des listes ordonnées avec une numérotation indentée
+* On peut mettre en gras ou italique avec les astérisques.
+* On peut insérer des liens hypertextes
+
+Maintenant que vous avez une meilleure compréhension d’un document Markdown, allons voir comment on peut insérer du code R. Faire les touches control + option/alt + i pour insérer votre premier code chunk.
+````
+```{r ajouter-un-label-ici, eval=FALSE}`r ''`
+ 8+192
+```
+````
+Comme vous pouvez voir, le code chunk est délimité par 3 accents (```). Dans les accolades à côté du caractère r, c’est une bonne habitude d’ajouter une étiquette descriptive du code chunk. Pour visualiser notre document, nous allons changer les paramètres d’affichage pour « Preview in Viewer Pane ». Appuyer sur (control + shift + K) pour avoir un aperçu.
+
+### Importer des données
+On peut importer des données dans R à l’intérieur d’un document RMarkdown afin de les visualiser. Pour ce faire, on doit créer un nouveau code chunk. À l’intérieur de celui-ci, on décide d’importer les données diamonds de la librairie `ggplot2`. Vous pouvez copier ce code dans votre document et compiler.
+````
+ ```{r load-data}`r ''`
+library(ggplot2)
+data(diamonds)
+```
+````
+````
+ ```{r table3}`r ''`
+DT::datatable(head(diamonds))
+```
+````
+La librairie DT permet d’obtenir une table avec des fonctionnalités intéressantes grâce à son encodage `JavaScript`. Avec ces données, nous allons maintenant créer nos premiers graphiques. Veuillez insérer le code ci-dessous dans votre document.
+````
+ ```{r simple-plot}`r ''`
+plot(1:10)
+```
+````
+````
+```{r plot2, fig.cap="A simple plot", cache=TRUE, echo=FALSE}`r ''`
+plot(1:10)
+```
+````
+Remarquer qu’en modifiant les options du code chunk :
+
+* On peut ajouter une légende au graphique avec `fig.cap`.
+* Si le chunk est long à rouler, on peut mettre l’option cache à TRUE afin de ne pas réévaluer la section à moins qu’elle ne soit modifiée.
+* L’option `echo = FALSE`, rend le code derrière le graphique invisible.
+Il existe encore une panoplie d’options qui peuvent amener des fonctionnalités très intéressante. Nous avons vu comment changer les options d’un code chunk particulier. Cependant, on peut aussi changer les options globales qui s’appliqueront à tous les codes R du document. Pour ce faire, aller créer un nouveau code chunk juste en dessous de l’entête YAML (control + option + i) et y inscrire le code ci-dessous.
+````
+```{r setup, include=FALSE}`r ''`
+knitr::opts_chunk$set(cache = TRUE, fig.align = 'center')
+```
+````
+L’option `include=FALSE` permet de ne pas afficher ce code chunk lors de la compilation du document. Avec la librairie Knitr, on appelle l’objet `opts_chunk$set` et on lui demande de garder en mémoire les sections évaluées et de centrer tous les graphiques. Une autre option très utile qui demande de ne pas imprimer le code R en sortie est possible en spécifiant l’argument `echo=FALSE`.
+
+## Application de base
+Maintenant que vous avez cette fondation, allons créer votre première application Shiny. La première étape est d’aller modifier l’objet output de votre entête YAML comme ceci à afin de spécifier que vous voulez créer une application.
+```
+---
+title: RMarkdown Primer
+author : Emilie Hamel
+output :
+    html_document
+runtime: shiny
+---
+```
+Par suite, on retourne à la fin du document, et on insérer un nouveau chunk nommé histogramme. On peut demander que l’option du chunk `message=FALSE` afin de masquer les messages qui apparaît par défauts avec `ggplot`.
+````
+```{r histogramme}`r ''`
+ggplot(diamonds, aes(x=price))+ geom_histogram()
+```
+````
+Il n’y a rien de spéciale avec ce graphique. C’est ici qu’on commence à s’amuser un peu plus. Nous allons maintenant créer un menu déroulant avec les colonnes numériques des données diamonds et afficher un histogramme en fonction de cette sélection. Pour commencer, on créer un vecteur qui contient toutes les colonnes numériques possibles. Par la suite, on ajoute selectInput[^5] avec 3 arguments. L’argument inputId permet de nommer la sélection, afin qu’elle puisse être appelée. L’argument label permet d’afficher une étiquette au-dessus du contrôle. 
+L’argument choices permet d’accéder à une liste de valeurs. Visualisons le résultat.
+````
+```{r histogramme, message=FALSE}`r ''`
+possible <- names(diamonds)[sapply(diamonds, is.numeric)]
+  #vecteur avec les noms de variables
+ 
+selectInput(
+  inputId = "selCol",
+  label = "select a column",
+  choices = possible
+)
+ 
+ggplot(diamonds, aes(x=price))+ geom_histogram()
+```
+````
+[^5]: <https://shiny.rstudio.com/reference/shiny/latest/selectInput.html>
+
+La liste déroulante avec les variables possible à utiliser pour l’histogramme ne sont pas encore lié ensemble. Il faut convertir l’expression ggplot afin qu’elle puisse devenir réactive. Quelques petits changements sont nécessaires. On doit entourer l’expression ggplot avec renderPlot. Ensuite, on doit spécifier que le aes qu’on utilise est en caractère avec `aes_string`. Finalement, on doit remplacer price par le `inputId` qui a été créé avec l’expression `selectInput`, soit selCol. Pour voir shiny en action, fait rouler le code avec Control + Shift + K pour knit le document.
+````
+```{r histogram, message=FALSE, cache=FALSE}`r ''`
+possible <- names(diamonds)[sapply(diamonds, is.numeric)] 
+  #vecteur avec les noms de variables
+selectInput(
+  inputId = "selCol",
+  label = "select a column",
+  choices = possible
+)
+renderPlot(ggplot(diamonds, aes_string(x=input$selCol)) +geom_histogram())
+```
+````
+# Flexdashboard
+La librarie flexdashboard permet de créer des pages web qui sont propulsé par R avec un RMarkdown. Dans cette partie, nous allons créer un document qui a l’apparence d’un site web et lui ajouter des fonctionnalités interactives Shiny. Flexdashboard est une librairie qui facilite la création d’un document qui a l’apparence d’un dashboard. Il possible de créer un dashboard en utilisant seulement shiny. Cependant, pour nous faciliter la tâches, nous allons poursuivre le tutoriel avec l’utilisation conjointe de shiny et flexdashboard.
+
+## YAML
+Nous allons ouvrir un nouveau fichier RMarkdown et construire un entête YAML qui est un peu différente du dernier RMarkdown que nous avons créé plus tôt. Le bloc output est plus complexe. À partir de la librairie flexdashboard, on appelle la fonction flex_dashboard. (Ne pas oublier les indentations.) Dans cette fonction, on spécifie plusieurs arguments. Les flexdashboards sont constitués de lignes et de colonnes. Avec l’argument orientation, on peut spécifier l’orientation primaire et l’orientation secondaire. Ici, nous avons choisi une orientation par colonnes. Aussi, pour l’argument vertical_layout nous avons choisi fill afin que le dashboard remplisse le navigateur mais nous pouvons aussi faire du scrolling avec scroll. Pour d’autres orientations ou layout, visiter <https://rmarkdown.rstudio.com/flexdashboard/>. Allons de compiler le document, pour une meilleure visualisation, changeons le paramètre d’aperçu à « Preview in Window ». On compile avec Control + Shift + K, comme d’habitude.
+```
+---
+title: Flexdashboard
+output:
+        flexdashboard::flex_dashboard:
+                orientation: columns
+                vertical_layout: fill
+                self-contained: true
+runtime: shiny
+---
+```
+````
+ ```{r setup, include=FALSE}`r ''`
+library(flexdashboard)
+```
+````
+On obtient un document vide. Cependant, on remarque qu’en agrandissant la fenêtre du navigateur, Flexdashboard est capable de s’ajuster en conséquence. Notons aussi que source_code est l’onglet pour visualiser directement les codes et  social est celui pour le partage sur les réseaux sociaux. En plus, navbar permet d’ouvrir un lien dans un autre navigateur.
+
+## Mise en page/layout
+Contrôler la mise en page d’un flexdashboard est relativement simple. Maintenant que nous avons choisi une orientation par colonne, allons formater le document avec les éléments: page, colonne et section (ligne). Pour spécifier une page, on utilise 1 dièses (#). Les pages sont affichées sur la barre de navigation. Ensuite, chaque page contient un ou plusieurs colonnes. Pour spécifier chaque colonne , on utilise 2 dièses (##). Enfin on peut subdiviser une colonne en sections avec 3 dièses (###). En dessous du code YAML, on insère un code comme celui-ci:
+```
+# page 1
+
+## colonne 1
+### ligne 1
+
+## colonne 2
+### ligne 1
+### ligne 2
+###
+
+# page 2
+```
+Rapidement, on peut observer la création de 2 onglets qui donne accès à 2 pages. La première page est divisée en 2 colonnes dont une contient seulement une ligne et la deuxième contient 3 lignes. Remarquer aussi que lorsqu’aucun texte suit les dièses, l’espace ne comportera pas d’entête. En outre, ces entêtes peuvent être remplacées par des titres et sous-titres. 
+Une fois la mise en page construite, on peut peupler les espaces. On peut ajouter des tableaux sommaires et des graphiques. Pour ce faire, nous allons maintenant importer des données.  Nous allons utiliser les données economics de la librairie ggplot2. Nous avons besoin d’un nouveau code chunk inséré avant la mise en page.
+````
+```{r load-data, cache=TRUE}`r ''`
+data(economics, package = "ggplot2")
+```
+````
+````
+```{r load-pkg,cache=TRUE}`r ''`
+library(ggplot2)
+library(magrittr)
+library(leaflet)
+```
+````
+Maintenant, nous allons insérer une table à partir des données economics dans le premier cadran de droite. Dans un nouveau code chunk nommé display-econ, la fonction datatable du package DT est utiliser pour visualiser les données. Donc, le chunk est mis en-dessous de la notation colonne 1 et ligne 1. 
+```
+## colonne 1
+### ligne 1
+```
+````
+```{r display-econ}`r ''`
+DT::datatable(economics)
+```
+````
+Dans la deuxième colonne à la première ligne, nous allons ajouter un histogramme des données economics. La variable x sera `psavert` (personal saving rate).
+````
+```{r hist-econ}`r ''`
+ggplot(economics, aes(x=psavert)) + geom_histogram()
+```
+````
+Étant donné que le document prend un peu plus de temps pour être compilé, nous allons créer un nouveau code chunk au début du document nommé set-up.
+````
+```{r setup}`r ''`
+knitr::opts_chunk$set(cache=TRUE)
+```
+````
+Rapidement, ajoutons un deuxième graphique, soit un nuage de point.
+````
+```{r scatter-econ}`r ''`
+ggplot(economics, aes(x = psavert, y= pce)) + geom_point()
+```
+````
+Jusqu’à maintenant notre tableau de bord est statique si on ne compte pas les fonctionnalités Javascript du tableau DT. Pour rendre nos tableaux et graphiques interactifs, nous allons y incorporer du shiny. 
+Voici quelque changements à apporter au dernier code chunk que nous avons créé. On doit premièrement entourer les fonctions avec soit `renderDataTable` ou `renderPlot` comme ceci. 
+```
+### ligne 1
+```
+````
+```{r display-econ}`r ''`
+DT::renderDataTable(DT::datatable(economics))
+```
+````
+```
+## colonne 2
+### ligne 1
+```
+````
+```{r hist-econ}`r ''`
+renderPlot(ggplot(economics, aes(x=psavert)) + geom_histogram())
+```
+````
+```
+### ligne 2
+```
+````
+```{r scatter-econ}`r ''`
+renderPlot(ggplot(economics, aes(x = psavert, y= pce)) + geom_point())
+```
+````
+Remarquer que shiny est sensible aux majuscules.
+
+## Contrôles d’input
+On peut remarquer que les dimensions des graphiques sont mieux adaptés à notre fenêtre. Voilà, nous avons ajouté des éléments shiny à notre flexdashboard. La prochaine étape est de rendre notre tableau de bord interactif en ajoutant des contrôles d’inputs.
+
+### Types d’input
+Afin de permet aux utilisateurs d’interagir avec une application shiny, il est possible d’ajouter des contrôle de widget. Les widgets obtient une valeur définie par l’utilisateur. Lorsque l’utilisateur change le widget, la valeur du widget change aussi. Chris Beeley à créer une petite application pour visualiser les principales widgets disponible [^6]. Pour les visualiser, créer un nouveau script R et copier coller le code ci-dessous. 
+```
+library(shiny)
+runGist(6571951)
+```
+Les utilisateurs peuvent interagir avec une application à l’aide des boîtes à cocher, des champs pour y insérer des dates, du texte ou des chiffres, des boutons radio, des listes déroulantes ou  des sliders.
+Dans notre exemple, nous allons donner la possibilité à l’utilisateur de choisir la variable utilisée pour donner l’histogramme. Premièrement, dans la première colonne, nous allons ajouter une nouvelle ligne pour un contrôle d’input et y ajouter un chunk nommé hist-var.
+```
+### Contrôle pour histogramme {data-height=150}
+```
+````
+```{r hist-var}`r ''`
+selectInput(
+  inputId = "histVar",
+  label = "please select a column",
+  choices = names(economics)
+)
+```
+````
+[^6]: <https://gist.github.com/ChrisBeeley/6571951>
+
+Ici, nous doit spécifier 3 arguments de la fonction selectInput. Le inputId donne un nom à l’objet qui sera créé pour que par la suite on puisse y accéder et l’utiliser en output. Le label est, comme nous avons déjà vu, donne un titre à la liste déroulante. L’argument choices reçoit la liste des variables avec lesquelles on désire visualiser avec l’histogramme. Si vous compiler le document, vous vous apercevrez que on peut maintenant choisir une colonne. Cependant, cela n’a aucune effet sur le graphique. 
+Pour connecter la liste déroulante à l’histogramme, nous devons changer 3 choses dans le code chunk de hist-econ. On doit accorder a x la valeur `input$histVar`. Puisque `input$histVar` stock des valeur en non numérique, ase devient ase_string. Ce que nous accordons à y doit être mis entre guilmet.
+```
+### ligne 2
+```
+````
+```{r scatter-econ}`r ''`
+renderPlot(ggplot(economics, aes_string(x = input$histVar, y= "pce")) + geom_point())
+```
+````
+Avec ces petits ajout, l’utilisateur est en mesure de contrôler le outputs du tableau de bord. Après avoir peuplé la première page de notre tableau de bord, regardons comment on peut y ajouter un barre latérale. On peut copier ce code au-dessus de “# page 1 “. 
+```
+# page 0
+## Controls {.sidebar data-width=300}
+```
+````
+```{r file-input}`r ''`
+fileInput(
+  inputId = "fileUpload",
+  label = "please upload your file here",
+  multiple = FALSE,
+  buttonLabel = "Upload",
+  placeholder = "waiting for file"
+)
+```
+````
+```
+## data view
+```
+Pour créer une barre latérale, on doit ajouter, vis-à-vis l’indicateur de colonne “Controls”,  la notation CSS `{.sidebar data-width=300}`. Dans notre exemple, nous allons explorer comment il est possible d’importer des données à partir du dashboard. En fait, le code précédent créer un widget pour importer du fichier. Par contre, pour le faire fonction il manque un chunk qui téléchargera les données. On place le bout de code au dessus de “# page 0”.
+````
+```{r read-file}`r ''`
+theData <- reactive({
+  if(is.null(input$fileUpload))
+  {
+    return(NULL)
+  }
+  `readr::read_csv(input$fileUpload$datapath)`
+})
+```
+````
+Ce code crée un objet réactif theData. L’expression multi-lignes doit être entouré d’accolades. L’expression ressemble à un loop avec un if statement. Pour l’instant, nous allons seulement donner la possibilité de télécharger un fichier CSV. Afin de visualiser les données importer, nous allons créer un chunk en-dessous de la ligne data view comme ceci:
+```
+### Table des données importées
+```
+````
+```{r show-uploaded-data}`r ''`
+DT::renderDataTable(DT::datatable(theData()))
+```
+````
+On utilise les fonctions de la librairie DT pour afficher l’objet réactif. Notez que si on désire afficher des objets réactifs, on doit toujours utiliser “render” comme “renderDataTable” ou “renderPlot”. Étant donnée que theData est un expression réactif, il se comporte un peu comme une fonction. Pour cette raison, theData doit être suivi de parenthèses ().
+Si on veut développer un tableau de bord plus complexe, on peut utiliser des onglets qui permettent de cacher ou afficher des portions de visualisation. Rapidement, on faire ceci facilement en ajoutant du metadata en des accolades de la colonne data view, soit {.tabset}. Puis, pour comprendre, ajoutons un tableau sommaire de theData dans le 2e onglet.
+```
+## Data view {.tabset}
+### Table
+```
+````
+```{r show-uploaded-data}`r ''`
+DT::renderDataTable(DT::datatable(theData()))
+```
+````
+```
+### Summary
+```
+````
+```{r show-summaru}`r ''`
+renderPrint(summary(theData()))
+```
+````
+Pour personnaliser le  tableau de bord, il est possible d’inclure un logo. Pour accomplir ceci, il suffit d’aller dans l’entête YAML et d’ajouter à l’endroit logo le nom de l’image désirée. L’image doit être dans le même répertoire de travail que le tableau de bord.  
+```
+---
+title: Flexdashboard     
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    logo: hec2.png
+runtime: shiny
+---
+```
+Dans la prochaine section, nous allons mettre de l’avant la facilité et la puissance de shiny. Les widgets HTML sont accessible au travers des librairies R qui nous permet de l'utiliser les librairies `JavaScript`. Cet exemple est tiré de la série youtube de Jared Lander. 
+Pour commencer nous allons télécharger des données en format JSON et les visualiser dans une table et une carte en utilisant Leaflet. Au bas de notre document, allons ajouter un autre onglet nommé map ainsi que 2 colonnes sans titre qui contiennent une ligne chaque.
+```
+# Map
+##
+### Data
+##
+### Map
+```
+Nous allons les données qui se nomme FavoriteSpots.json. Pour ce faire, allons au tout début du document pour y ajouter:
+````
+```{r locations}`r ''`
+root <- rprojroot::find_rstudio_root_file()
+```
+````
+````
+```{r read-map-data}`r ''`
+  pizza <- jsonlite::fromJSON(file.path(root, "/2. Flexdashbord/favoritespots.json")) %>% 
+    tidyr::unnest()
+```
+````
+Ce fichier contient l’adresse de pizzeria à New York ainsi que leur latitude et longitude. Nous avons mis les données dans l’objet pizza avec la librairie jsonlite et la fonction fromJSON.
+Ajoutons un nouveau code chunk sur la ligne de la colonne Data pour afficher une table de ces données. Comme dans la section d’avant, on doit utiliser renderDataTable pour que la table soit réactive. On utilise l’objet pizza créer avec le code chunk read-map-data. On ne veut pas afficher le nom des lignes, donc `rownames = FALSE`. Finalement, on y ajoute une barre déroulante (horizontal scroll bar) avec l’argument options.
+```
+### Data
+```
+````
+```{r pizza-table}`r ''`
+DT::renderDataTable(
+  DT::datatable(
+       pizza,
+      rownames = FALSE,
+      options = list(scrollX=TRUE)
+  ))
+```
+````
+Lorsqu’on knit le document, on obtient une table qui affiche l’information de pizza. Pour construire la map, on doit ajouter ce bout de code. Ici. on appelle la librairie Leafflet avec la fonction renderLeaflet et leaflet. Cette librairie devrait déjà être dans le code chunk load-pkg. Dans l’objet leaflet, on ajout plusieurs arguments de données. L’attribut addTiles permet obtenir une carte interactive. Par défaut, on utilise OpenStreetMap. On ajoute des petits marqueurs avec addMarkers basé sur la longitude et la latitude. Finalement, avec popup on fait apparaître le nom de pizzeria en cliquant sur les marqueurs avec notre curseur.
+```
+### Map
+```
+````
+```{r pizza-map}`r ''`
+renderLeaflet(
+  leaflet(pizza) %>%
+    addTiles() %>%
+    addMarkers(
+      lng = ~longitude, lat = ~latitude,
+      popup = ~Name,
+  )
+)
+```
+````
+
+## CrossTalk
+Une autre fonctionnalité intéressante de shiny est de permettre aux widgets de communiquer entres elles. Dans un nouveau fichier Rmarkdown, nous allons copier des bouts de code que nous avons utilisé plus tôt. 
+Premièrement, nous allons créer une entête YAML et un code chunk pour les librairies nécessaire, et les chunks pour aller chercher les données pizza comme ceci. 
+```
+---
+title: "flexCrosstalk"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    self-contained: true
+    logo: hec2.png
+---
+```
+````
+```{r load-pkg}`r ''`
+library(magrittr)
+library(leaflet)
+```
+````
+````
+```{r location}`r ''`
+root <- rprojroot::find_rstudio_root_file()
+```
+````
+````
+```{r read-map-data}`r ''`
+pizza <- jsonlite::fromJSON(file.path(root, "/2. Flexdashbord/favoritespots.json")) %>% 
+    tidyr::unnest()
+
+```
+````
+Rien de nouveau jusqu’à présent. Pour permettre la communication entre les widgets HTML, on doit créer un ensemble de donnée partagé. Ce concept est introduit par la librarie crossatalk. Pour pouvoir utiliser cette librairie ajoutons `library(crosstalk)` dans le code chunk load-pkg. Le deuxième ajout est la création de l’ensemble de donnée. Pour ce faire, ajouter ce bout de code dans le chunk read-map-data.
+```
+pizzaShare <- SharedData$new(pizza)
+ ```
+Le nouvel objet pizzaShare pourra déservir le tableau et la carte en même temps. Les code chunk nécessaire pour le tableau et la carte devront être modifié comme-ci.
+```
+### Data
+```
+````
+```{r pizza-table}`r ''`
+DT::datatable(
+  pizzaShare,
+  rownames = FALSE,
+  options = list(scrollX=TRUE)
+)
+```
+````
+```
+##
+
+### Map
+```
+````
+```{r pizza-map}`r ''`
+leaflet(pizzaShare) %>%
+  addTiles() %>%
+  addMarkers(
+    lng=  ~longitude,
+    lat = ~latitude,
+    popup = ~Name
+    
+  )
+```
+````
+Plus spécifiquement, on remplace l’objet pizza par pizzaShare pour construire la table. Pour construire la carte, on doit maintenant utiliser leaflet et lui accorder l’objet pizzaShare. Lorsqu’on knit le document, il ressemble exactement à lui construit précédemment.  Cependant, lorsqu’on clique sur une des pizzeria dans la liste, alors seulement celle-ci apparaît sur la carte. Si aucune pizzeria est sélectionnée dans le tableau, alors toutes les pizzeria apparaîtra sur la carte. Donc, voilà, vous avez réussi créer des widgets qui sont capable de communiquer l’une avec l’autre.
+
+
+## Storyboard
+Un storyboard est particulièrement utile pour les présentations. Il permet notamment d'intégrer des commentaires en sidebar en plus des graphiques ou des extraits de données. En plus, une barre de défilement des diapos est également affichée pour mettre le titre ou une brève description après ### . Il y a deux façon de créer le storyboard: 
+Tous les dashboards constituent les diapositives du storyboard (intégral)
+Une partie seulement des pages  va être considérée comme des diapositives du storyboard (partiel)
+Storyboard intégral:
+Il faut dans ce cas ajouter storyboard: true dans le metadata YAML de flexdashboard. Les diapositives sont précédées de ###. Noter aussi que les commentaires du sidebar sont précédés de ***
+```
+---
+title: "Storyboard integral"
+output:
+  flexdashboard::flex_dashboard:
+    storyboard: true
+---
+### Diapo 1
+```{r}
+```
+***
+Commentaires du diapo 1.
+### Diapo 2 {data-commentary-width=400}
+```{r}
+```
+***
+Commentaires du diapo 2.
+```
+Storyboard partiel :
+L’activation du storyboard ne se fait plus au niveau du metadata mais directement sur la page concernée qui est affichée dans la barre de navigation `{.storyboard}`. Remarquer également dans l’exemple que cet affichage sur la barre de navigation peut se faire avec ===========
+```
+---
+title: "Storyboard Partiel"
+output: flexdashboard::flex_dashboard
+---
+# Analyses {.storyboard}
+### Diapo 1
+```{r}
+```
+***
+commentaires
+### Diapo 2
+```{r}
+```
+***
+commentaires
+Details
+=========================================
+## colonne
+### Titre 1
+```{r}
+```
+### Titre 2
+```{r}
+```
+```
+
+# Shinydashboard
+
+Les applications shiny peuvent être construite de 2 manières. Elles peuvent être construite à partir de 2 scripts R ayant respectivement comme nom ui et server. Elle peuvent aussi être construite dans un seul fichier nommé app. Les applications shiny sont parfaites pour construire des applications web professionnelle. Leur mise en forme ressemble beaucoup à celle que nous avons conçu avec flexdashboard. Cependant, shiny permet de générer des rapport, en format PDF par exemple, en fonction des besoins de l’utilisateur.
+
+## Application construite avec 2 scripts R
+Dans un premier temps, nous allons explorer comment créer une application shiny avec 2 scripts. Cette façon est la plus simple. Il met en évidence l’architecture nécessaire pour créer un programme. Il est important que les 2 scripts appartiennent au même dossier. Aussi, ils doivent absolument être nommé `server.R` et `ui.R`. Comme expliqué plus tôt, les applications Shiny sont basées sur les concepts d’input et de output. Le script ui (user interface) est l’endroit où les élément d’input sont défini. Les inputs sont traité par le serveur. Finalement, le serveur renvoie ce qu’il a traité en output à l’interface de l’utilisateur. 
+Pour commencer, nous allons construire le squelette d’un fichier `server.R`. C’est dans ce fichier que tous les calculs computationnels prennent place. 
+
+### Serveur
+```
+library(shiny)
+shinyServer(function(input, output, session)
+{
+})
+```
+Dans ce code, nous avons téléchargé la librairie shiny. Par la suite, on appel la fonction shinyServer qui elle prend comme argument une autre fonction. Pour l’instant, les arguments que nous allons avoir de besoin sont input, output et session. Input contient les inputs contrôlé par l’utilisateur. Output contient tout ce qui est généré par le serveur et par la suite envoyé au UI. Session contient l’information à propos de l'environnement utilisé pour accéder à l’information.
+
+### UI
+Maintenant dans le fichier ui.R, nous allons appeler la librairie shiny et shinydashboard. Le UI contient 3 éléments principaux: la barre latéral, le corp et l’entête. 
+```
+dashboardPage(
+    header = dashboardHeader(),
+    sidebar = dashboardSidebar(),
+    body =  dashboardBody(),
+    title = “Exemple de Dashboard”,
+    skin = “blue”
+)
+```
+
+### Application de base
+
+Si on roule l’application, on voit un tableau de bord vide comme attendu. Avec ce squelette, nous allons commencer par peupler l’entête. On ajoute un élément title à header. Pour rouler l’application, on utilise control + shift + enter. 
+```
+dashboardPage(
+    header = dashboardHeader(title = "Simple Dashboard"),
+    sidebar = dashboardSidebar(),
+    body =  dashboardBody(),
+    title = “Exemple de Dashboard”,
+    skin = “blue”
+)
+```
+On remarque qu’un titre apparaît dans le coin en haut à gauche. Tout fonctionne bien. Par contre, si on construit le UI directement dans la fonction dashboardPage, cette section risque de devenir très compliqué. Pour des raisons de clarté, il est mieux d’appeler une variable qui contient l’information et l’assigner à header.
+```
+dashHeader <- dashboardHeader(title = "Simple Dashboard")
+
+dashboardPage(
+    header = dashHeader,
+    sidebar = dashboardSidebar(),
+    body =  dashboardBody(),
+    title = “Exemple de Dashboard”,
+    skin = “blue”
+```
+Construisons la barre latéral. La façon de faire ressemble à celle utiliser pour l’entête. Nous allons créer une variable nommé dashSidebar et l’insérer dans la fonction dashboardPage. Pour l’instant, nous allons créer 2 sections : Home et Graphs. Avec la fonction sidebarMenu, on peut initialiser 2 fois menuItem. À l’intérieur de menuItem, on doit spécifier le texte apparaîtra sur la barre latéral, le nom du l'identifiant et un icône. Les icône disponible sont accessible avec Font Awesome et Glyphicons. Nous avons décider d’utiliser les icône de Font Awesome[^7].  Compiler l’application pour visualiser notre travail. 
+
+[^7]: <https://fontawesome.com/v4.7.0/icons/> et <https://www.glyphicons.com/>
+
+```
+dashSidebar <- dashboardSidebar(
+  sidebarMenu(
+    menuItem(
+      text = "Home",
+      tabName = "HomeTab",
+      icon = icon("dashboard")
+    ),
+    menuItem(
+      text = "Graphs",
+      tabName = "GraphsTab",
+      icon = icon("bar-chart-o")
+    )
+))
+```
+Amenons notre attention sur le corp du tableau de bord. Comme avec la barre latéral, on doit créer une variable qui sera par la suite appelée dans dashboardPage.  On créer 2 tabItems avec la fonction dashboardBody. À l’intérieur de celle-ci, on peut ajouter le nom qui sera affiché et du texte en format HTML dans le corps du texte. 
+```
+dashBody <- dashboardBody(
+  tabItems(
+    tabItem(
+      tabName = "HomeTab",
+      h1("Landing page!"),
+      p("This is the landing page for the dashboard."),
+      em("This text is emphasized.")
+    ),
+    tabItem(
+          tabName = "GraphsTab",
+          h1("Graphs!"))
+)
+)
+```
+Lorsqu’on roule l’application, on observe que les TabItems est une façon efficace de créer des modules dans une application. De cette manière, il est donc possible de rendre accessible plus d’information et ce en créant plusieurs pages. 
+Dans la prochaine section, nous allons ajouter plusieurs graphiques dans la pages Graphs qui seront contrôlés par une liste déroulante et un slider. Nous allons ajouter une liste déroulante avec les variables que l’utilisateur pourra choisir de visualiser. Pour simplifier les choses, nous allons travailler avec les données diamonds de la libraries ggplot.  Avec la fonction `selectInput`, on note l’identifiant, une étiquette, un vecteur avec les choix de variables, et la sélection par défaut comme `Price`. Par la suite, on réserve un espace pour générer un histogramme. En contraste avec RMarkdown, lorsqu’on travail avec Shiny, nous n’avons pas à rendre un output (“render”) puisque ceci est effectué dans le fichier server. Dans le ui, il suffit de visualiser un output avec un identifiant. 
+```
+tabItem(
+  tabName = "GraphsTab",
+  h1("Graphs!"),
+          #Selector for what to plot
+              selectInput(
+                inputId = "VarToPlot",
+                label = "Select a variable to plot",
+                choices = c("carat", "depth", "table", "price"),
+                selected = "Price"
+              ),
+            #Placeholder for what to plot
+            plotOutput(outputId = "HistPlot")
+          ))))
+```
+Maintenant, regardons comment utiliser le serveur pour générer en output l’histogramme que nous désirons afficher dans le ui. Nous allons créer un output qui se nomme HistPlot comme nous avons nommé le graphique dans le ui. Avec ggplot, nous allons rendre un histogramme comme ceci.
+```
+shinyServer(function(input, output, session)
+{
+  output$HistPlot <- renderPlot({
+    ggplot(diamonds, aes_string(x=input$VarToPlot))+ geom_histogram(bins = 30)
+  })
+```
+Ajoutons un autre contrôle pour permet à l’utilisateur d’intéragir encore plus avec les données. On retourne au script ui. Nous allons ajouter un slider pour indiquer le nombre de bin qui sera utiliser pour faire notre visualisation. En dessous du bloc pour la liste déroulate, on ajoute ceci. (Faite attention de séparer chacun des bloc de code par des virgules.) Ici, on prédéfini l’identifiant par `Histbins`.
+```
+          #Choose number of bins
+          sliderInput(
+            inputId= "Histbins",
+            label = "Choose number of bins",
+            min = 5, max=100, value=30
+          ),
+```          
+On retourne au fichier server pour changer bin=30 par `input$Histbins` comme ceci:
+```
+output$HistPlot <- renderPlot({
+    ggplot(diamonds, aes_string(x=input$VarToPlot))+
+      geom_histogram(bins = input$Histbins)
+```
+Maintenant, nous allons regarder comment diviser l’espace d’une page avec fluidRows et box. On aimerait avoir les contrôles (liste déroulante et slider) à gauche et le graphique à droite. Pour économiser de l’espace dans le document, nous avons remplacé des bouts de code par “.....”. Ce qui est important de remarquer dans le code chunk plus bas est la fonction fluidRow et box entoure les sections de code élaboré auparavant. L’expression fluidRow doit commencer après le GraphsTab et terminer après le graphique. Nous allons utiliser 2 boîtes. La première pour délimiter les contrôle avec `box()`. La deuxième pour délimiter la section des graphiques. Puisque nous allons faire plusieurs visualisation, nous allons utiliser `tabBox()` soit pour créer un tab pour chacun des graphiques.
+```
+dashBody <- dashboardBody(
+  tabItems(
+    tabItem(
+        ….
+    ),
+    tabItem(
+      tabName = "GraphsTab",
+      h1("Graphs!"),
+      fluidRow(
+        box(
+          width = 3,
+          collapsible = TRUE,
+          title = "Controls",
+          status = "primary", solidHeader = TRUE,
+          #Selector for what to plot
+         …..
+          ),
+          
+          #Choose number of bins
+        …..
+          )
+        ),
+        tabBox(
+          width = 9,
+            title = "Histogram",
+            #Placeholder for what to plot
+            plotOutput(outputId = "HistPlot")
+          )
+))      
+```
+Regardons comment ajouter d’autres graphiques à l’aide de tabBox. Dans le UI, il faut simplement mettre chaque graphique à l’intérieur d’une expression tabPanel. La création est très similaire à celui de l’histogramme fait auparavant. 
+```
+tabBox(
+width = 9,
+tabPanel(
+title = "Histogram",
+#Placeholder for what to plot
+plotOutput(outputId = "HistPlot")
+),
+tabPanel(
+title = "Density",
+plotOutput(outputId = "Densplot")
+),
+tabPanel(
+title = "Table",
+DT::dataTableOutput(outputId = "theTable")
+)
+```
+Si on roule l’application comme ceci, il n’y aura pas de graphique dans les 2 derniers tab puisque nous n’a pas pas modifier le script server. Dans le server, on doit ajouter des items en outputs. 
+```
+  output$Densplot <- renderPlot({
+    ggplot(diamonds, aes_string(x = input$VarToPlot))
+      + geom_density(fill = "gray50")
+  })
+  output$theTable <- DT::renderDataTable({
+    DT::datatable(diamonds, rownames = FALSE)
+  },
+  server = TRUE)
+```
+
+Remarquer la dernière ligne `server = TRUE`. Ceci permet d’accélérer le temps computationnelle parce que le serveur envoie seulement les données qui doivent être visualisé dans le tableau 
+
+### Générer un rapport
+Un attribut intéressant à inclure est la possibilité pour l’utilisateur d'interagir avec le tableau de bord et ensuite générer un rapport en fonction de ces interactions. Dans cette section, nous allons explorer comment générer un fichier RMarkdown qui est paramétriser. 
+Premièrement, créer un nouveau fichier RMarkdown nommé report.Rmd dans le répertoire dashboard que nous avons créé. Voici le YAML nécéssaire:
+```
+---
+title: "Pizza Spots"
+output: html_document
+params:
+  places: 'none'
+---
+```
+Dans ce rapport très simple, nous allons imprimer le nom des pizzeria que l’utilisateur à sélectionné dans la table du tableau de bord. On pourrait produire un document Word, un rapport PDF mais pour nous faciliter la tâche nous allons exporter en document HTML. Le paramètre qui pourra être modifié sera nommé “places”. L’affichage par défaut le paramètre n’est pas spécifié est “none”.  Dans le corp du document, nous allons inscrire ceci:
+```
+This report prints a list of pizza places.
+```
+````
+```{r pizza-places, echo= FALSE}`r ''`
+params$places
+```
+````
+Si on knit the document et qu’on visualise dans un navigateur, la valeur par défaut de params apparaît. (Garder la votre navigateur ouvert. Nous allons y revenir bientôt.) Pour tester le tout, inscrirez dans la console ceci:
+```
+rmarkdown::render('dashboard/report.Rmd' ,
+    params =  list(places = c( "La pizz", "milia's")))
+```
+Maintenant, si vous rafraîchissez votre navigateur, les éléments “La pizz" et "milia's" devraient remplacer “none”. Cette fonctionnalité est très intéressante si on désire envoyer différentes versions d’un rapports à plusieurs personne par exemple. 
+
+### Générer un rapport personnalisé avec un tableau de bord
+Dans le fichier ui, nous allons ajouter un bouton pour télécharger le rapport. Tout de suite après l’expression `fluidRow` du bloc de code pour la tabulation nommé pizzaMap, on insère ce code.
+```
+        box(
+          width = 12,
+          downloadButton(outputId= 'Report', label = 'Generate Report')
+        ),
+```
+On revient au fichier server. 
+```
+  output$PizzaMap <- renderLeaflet({
+    leaflet(
+        pizza %>% dplyr::slice(as.integer(input$PizzaTable_rows_selected))
+      ) %>%
+        addTiles() %>%
+        addMarkers(
+          lng = ~longitude,
+          lat = ~latitude,
+          popup = ~Name
+      )
+    
+  })
+    
+  output$Report <- downloadHandler(
+    filename = 'report.htlm',
+    content = function(file){
+          tempFile <- file.path(tempdir(), 'report.Rmd')
+          file.copy('report.Rmd', to=tempFile, overwrite = TRUE)
+      
+      chosen <- pizza %>%
+        dplyr::slice(as.integer(input$PizzaTable_rows_selected)) %>%
+        dplyr::pull(Name)
+      
+      params <- list(places=chosen)
+      
+      rmarkdown::render(tempFile, output_file = file,  params= params,
+                        envir = new.env(parent = globalenv()))
+    }
+  )
+```
+On créer un nouvea objet output nommé `output$Report` et on lui ajoute l’expression `downloadHandler`. À l’expression content, on indique que nous allons utiliser le template report.Rmd que nous avons créé. Aussi, on indique que le rapport html généré sera sauvegarder dans le même répertoire que l’application est situé. Après, la variable chosen est crée. On assigne à cette variable une liste des places qui ont été sélectionné dans le tableau du dashboard. Cette variable est alors donnée à params. Pour générer le rapport, on doit rendre le fichier que nous venons tout juste de créer. Et voilà, votre rapport personnalisé à été créé.
+
+## Application construite avec 1 script R
+### UI et Server
+Il est également possible de réunir,  dans un même script R, les éléments `server.R` et `ui.R`, comme le démontre la structure ci après:
+```
+library(shiny)
+server <- function(input, output) {
+  #contents of server.R file
+}
+ 
+ui <- fluidPage( # or other layout function
+  # contents of ui.R file
+)
+shinyApp(ui = ui, server = server)
+```
+### Application de base
+Concrètement, nous pouvons compiler  l’exemple très simple suivant qui consiste à visualiser un histogramme dans un dashboard  en sélectionnant la variable observée et le nombre minimal de chômage. Pour ce faire, il suffit juste de copier le code dans un fichier script R. Remarquons, cette fois-ci, dans le résultat que le widget n’est plus mis en sidebar mais directement intégré dans la partie d’affichage. Ce qui est rendu possible avec la fonctionnalité `fillCol()` (ou `fillRow()` si l’orientation est rows).
+```
+library(ggplot2)
+library(dplyr)
+# Shiny economics module
+
+# UI function
+
+economicUI <- fluidPage(
+ 
+    titlePanel("Widget"),
+ 
+    fillCol(height = 400, flex = c(1,1),
+          inputPanel(
+            selectInput(inputId = "variable",
+                        label = "Select a column to display",
+                        choices = colnames(economics)),
+            numericInput(inputId ="jobless",
+                        label="Number of unemployed >=",
+                        value=6000,min=6000, max=max(economics$unemploy),step=1000)
+                      ),
+        
+          plotOutput("econoplot",height = "150%")
+          #leafletOutput()
+          #dataTableOutput()
+          )
+    )
+# Server function
+economic<- function(input,output,session) {
+ 
+  dataset <- reactive({filter(economics,unemploy>=input$jobless)})
+                                 
+  output$econoplot <- renderPlot({
+    ggplot(dataset(),aes_string(x=input$variable))+geom_histogram()})
+}
+
+shinyApp(ui=economicUI,server=economic)
+```
+# Conclusion
+
+Et voilà. Félicitations! Vous avez complété le tutoriel. Vous êtes maintant initié à Flexdashboard et Shinydashboard.
+
+# References
+
+---
+nocite: '@*'
+...
+

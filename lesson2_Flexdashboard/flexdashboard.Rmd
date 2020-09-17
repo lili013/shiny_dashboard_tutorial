@@ -1,0 +1,155 @@
+---
+title: Flex example
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    self-contained: true 
+    logo: hec2.png
+runtime: shiny
+---
+
+```{r read-file}
+theData <- reactive({
+  if(is.null(input$fileUpload))
+  {
+    return(NULL)
+  }
+  readr::read_csv(input$fileUpload$datapath)
+  
+})
+```
+
+# First page
+
+## Controls {.sidebar data-width=300}
+
+```{r file-input}
+fileInput(
+  inputId = "fileUpload",
+  label = "please upload your file here",
+  multiple = FALSE,
+  buttonLabel = "Upload",
+  placeholder = "waiting for file"
+)
+```
+
+## Data view {.tabset}
+
+### Table
+
+```{r show-uploaded-data}
+DT::renderDataTable(DT::datatable(theData()))
+```
+
+### Summary
+
+```{r show-summaru}
+renderPrint(summary(theData()))
+```
+
+
+# Second page
+```{r setup}
+knitr::opts_chunk$set(cache=FALSE)
+```
+
+```{r load-data, cache=TRUE}
+data(economics, package = "ggplot2")
+```
+
+```{r load-pkg,cache=TRUE}
+library(ggplot2)
+library(magrittr)
+library(leaflet)
+library(dplyr)
+```
+
+```{r locations}
+root <- rprojroot::find_rstudio_root_file()
+```
+
+
+```{r read-map-data}
+  pizza <- jsonlite::fromJSON(file.path(root, "/lesson2_Flexdashboard/favoritespots.json")) %>% 
+    tidyr::unnest()
+```
+
+
+## Confirmed
+### One
+
+```{r display-econ}
+DT::renderDataTable(DT::datatable(economics))
+```
+
+### Selector {data-height=150}
+
+```{r hist-var}
+selectInput(
+  inputId = "histVar",
+  label = "please selection a column",
+  choices = names(economics)
+)
+```
+
+
+## Recovered
+### Top
+```{r hist-econ}
+renderPlot(ggplot(economics, aes_string(x=input$histVar)) + geom_histogram())
+```
+<!-- The value stored in input dollars in hist var is a character. And we can't pass a character into AES. We have to use AES underscore string.  -->
+
+### Bottom
+```{r scatter-econ}
+renderPlot(ggplot(economics, aes_string(x = input$histVar, y= "pce")) + geom_point())
+```
+
+<!-- Though we can't supply PCE with no quotes because we are now using AES underscore string. We could move it into its own AES function call but it's just easier if we highlight the code and put quotes around it. -->
+
+# Page three {data-navmenu="Menu A"}
+Lion
+
+# Page four {data-navmenu="Menu A"}
+Monkey
+
+# Page five {data-navmenu="Menu B"}
+Elephant
+
+# Page six {data-navmenu="Menu B"}
+Tiger
+
+# Map
+
+##
+
+### Data
+
+```{r pizza-table}
+DT::renderDataTable(
+  DT::datatable(
+       pizza,
+      rownames = FALSE,
+      options = list(scrollX=TRUE)
+  ))
+```
+
+
+## 
+
+### Map
+```{r pizza-map}
+renderLeaflet(
+  leaflet(pizza) %>% 
+    addTiles() %>% 
+    addMarkers(
+      lng = ~longitude, lat = ~latitude,
+      popup = ~Name,
+  )
+)
+```
+
+
+
+
