@@ -1,11 +1,9 @@
 # shiny_dashboard_tutorial
 Exploration of Flexdashboard &amp; Shinydashboard
 
-In this repository, we take you show different functionnality of Flexdashboard and Shinydashboard.
-There are 3 sections. First, we start by quickly exploring RMarkdown. This will allow you to get
-you quickly started with Flexdashboard. Feel free to skip this folder if you know the basics.
-Then, we start playing around with Flexdashboard. Finally, we explore how to build dashboard
-either in 2 scripts (server.r and ui.r) or only 1.
+In this repository, we take you on a tour to explore different functionalities of Flexdashboard and Shinydashboard.
+The repository is built of three sections. First, we start by quickly [exploring RMarkdown](https://github.com/lili013/shiny_dashboard_tutorial/tree/master/lesson1_RMarkdown). This short primer allows you to get you started with Flexdashboard. Feel free to skip this folder if you know the basics.
+Then, we start playing around with [Flexdashboard](https://github.com/lili013/shiny_dashboard_tutorial/tree/master/lesson2_Flexdashboard). Finally, we explore how to build a dashboard either in [two scripts](https://github.com/lili013/shiny_dashboard_tutorial/tree/master/lesson3_Shinydashboard/app2) (server.r and ui.r) or only [one script](https://github.com/lili013/shiny_dashboard_tutorial/tree/master/lesson3_Shinydashboard/app1).
 
 You can follow along with a document I prepared in French here : [Rapport_final.md](https://github.com/lili013/shiny_dashboard_tutorial/blob/master/Rapport_final.md)
 
